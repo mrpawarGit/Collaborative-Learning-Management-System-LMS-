@@ -23,7 +23,7 @@ const app = express();
 // Create HTTP server
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// Initialize Socket.IO with CORS
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL || "http://localhost:3000",
@@ -33,7 +33,12 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -44,31 +49,26 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Join a course room
   socket.on("join-course", (courseId) => {
     socket.join(`course-${courseId}`);
     console.log(`Socket ${socket.id} joined course-${courseId}`);
   });
 
-  // Leave a course room
   socket.on("leave-course", (courseId) => {
     socket.leave(`course-${courseId}`);
     console.log(`Socket ${socket.id} left course-${courseId}`);
   });
 
-  // Join a lesson room
   socket.on("join-lesson", (lessonId) => {
     socket.join(`lesson-${lessonId}`);
     console.log(`Socket ${socket.id} joined lesson-${lessonId}`);
   });
 
-  // Leave a lesson room
   socket.on("leave-lesson", (lessonId) => {
     socket.leave(`lesson-${lessonId}`);
     console.log(`Socket ${socket.id} left lesson-${lessonId}`);
   });
 
-  // Handle disconnection
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
   });
@@ -84,7 +84,10 @@ app.use("/api/activities", activityRoutes);
 
 // Test route
 app.get("/", (req, res) => {
-  res.json({ message: "Collaborative LMS API is running" });
+  res.json({
+    message: "Collaborative LMS API is running",
+    environment: process.env.NODE_ENV,
+  });
 });
 
 // Error handling middleware
@@ -98,7 +101,7 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 
 module.exports = { io };
