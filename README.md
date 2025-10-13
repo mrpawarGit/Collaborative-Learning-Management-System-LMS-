@@ -76,7 +76,7 @@ Before running this project, make sure you have the following installed:
 ### 1. Clone the Repository
 
 ```
-git clone https://github.com/mrpawarGit/Collaborative-Learning-Management-System-LMS
+git clone https://github.com/mrpawarGit/Collaborative-Learning-Management-System-LMS-.git
 cd collaborative-lms
 ```
 
