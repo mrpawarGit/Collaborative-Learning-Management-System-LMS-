@@ -10,11 +10,15 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
+      // Get the base URL without /api
+      const socketURL = import.meta.env.VITE_API_URL.replace("/api", "");
+
       // Create socket connection
-      const newSocket = io(import.meta.env.VITE_API_URL.replace("/api", ""), {
+      const newSocket = io(socketURL, {
         auth: {
           token: user.token,
         },
+        transports: ["websocket", "polling"], // Add polling as fallback
       });
 
       newSocket.on("connect", () => {
@@ -23,6 +27,10 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on("disconnect", () => {
         console.log("Socket disconnected");
+      });
+
+      newSocket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
       });
 
       setSocket(newSocket);
