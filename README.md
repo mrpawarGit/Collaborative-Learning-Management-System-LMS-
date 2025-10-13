@@ -241,16 +241,15 @@ Password: password123
 - [x] Project setup and structure
 - [x] Authentication & Authorization
 - [x] Course Management
-- [ ] Lesson Management
-- [ ] Real-time features with Socket.IO
-- [ ] Comment system
-- [ ] Search and filtering
-- [ ] Progress tracking
-- [ ] Activity feed
-- [ ] File uploads
-- [ ] Email notifications
-- [ ] Video integration
-- [ ] Analytics dashboard
+- [x] Lesson Management
+- [x] Real-time features with Socket.IO
+- [x] Comment system
+- [x] Search and filtering
+- [x] Progress tracking
+- [x] Activity feed
+- [x] File uploads
+- [x] Video integration
+- [x] Analytics dashboard
 
 ## 🤝 Contributing
 
