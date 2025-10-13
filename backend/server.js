@@ -49,14 +49,14 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
-  maxAge: 600, // 10 minutes
+  optionsSuccessStatus: 200,
 };
 
-// Apply CORS middleware
+// Apply CORS middleware BEFORE routes
 app.use(cors(corsOptions));
 
-// Handle preflight requests
-app.options("*", cors(corsOptions));
+// REMOVE THIS LINE - it's causing the error:
+// app.options('*', cors(corsOptions));
 
 // Initialize Socket.IO with CORS
 const io = new Server(server, {
@@ -71,7 +71,7 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// Request logging middleware (optional - can remove in production)
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - Origin: ${req.get("origin")}`);
   next();
@@ -117,7 +117,7 @@ app.use("/api", commentRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/activities", activityRoutes);
 
-// Health check route
+// Health check routes
 app.get("/", (req, res) => {
   res.json({
     message: "Collaborative LMS API is running",
@@ -126,7 +126,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// API health check
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
@@ -135,7 +134,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// 404 handler
+// 404 handler - must be AFTER all routes
 app.use((req, res, next) => {
   res.status(404).json({
     message: "Route not found",
@@ -144,9 +143,18 @@ app.use((req, res, next) => {
   });
 });
 
-// Error handling middleware
+// Error handling middleware - must be LAST
 app.use((err, req, res, next) => {
-  console.error("Error:", err.stack);
+  console.error("Error:", err.message);
+
+  // CORS error
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      message: "CORS error: Origin not allowed",
+      origin: req.get("origin"),
+    });
+  }
+
   res.status(err.status || 500).json({
     message: err.message || "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.stack : undefined,
