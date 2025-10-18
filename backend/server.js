@@ -23,59 +23,19 @@ const app = express();
 // Create HTTP server
 const server = http.createServer(app);
 
-// Allowed origins
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://collaborative-lms.vercel.app",
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
-console.log("Allowed Origins:", allowedOrigins);
-
-// CORS Configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log("Blocked by CORS:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  exposedHeaders: ["Content-Range", "X-Content-Range"],
-  optionsSuccessStatus: 200,
-};
-
-// Apply CORS middleware BEFORE routes
-app.use(cors(corsOptions));
-
-// REMOVE THIS LINE - it's causing the error:
-// app.options('*', cors(corsOptions));
-
-// Initialize Socket.IO with CORS
+// Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
 });
 
-// Body parser middleware
+// Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Request logging middleware (optional - can remove in production)
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Origin: ${req.get("origin")}`);
-  next();
-});
 
 // Make io accessible to routes
 app.set("io", io);
@@ -84,32 +44,37 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
+  // Join a course room
   socket.on("join-course", (courseId) => {
     socket.join(`course-${courseId}`);
     console.log(`Socket ${socket.id} joined course-${courseId}`);
   });
 
+  // Leave a course room
   socket.on("leave-course", (courseId) => {
     socket.leave(`course-${courseId}`);
     console.log(`Socket ${socket.id} left course-${courseId}`);
   });
 
+  // Join a lesson room
   socket.on("join-lesson", (lessonId) => {
     socket.join(`lesson-${lessonId}`);
     console.log(`Socket ${socket.id} joined lesson-${lessonId}`);
   });
 
+  // Leave a lesson room
   socket.on("leave-lesson", (lessonId) => {
     socket.leave(`lesson-${lessonId}`);
     console.log(`Socket ${socket.id} left lesson-${lessonId}`);
   });
 
+  // Handle disconnection
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
   });
 });
 
-// API Routes
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api", lessonRoutes);
@@ -117,55 +82,23 @@ app.use("/api", commentRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/activities", activityRoutes);
 
-// Health check routes
+// Test route
 app.get("/", (req, res) => {
-  res.json({
-    message: "Collaborative LMS API is running",
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ message: "Collaborative LMS API is running" });
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "API is healthy",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// 404 handler - must be AFTER all routes
-app.use((req, res, next) => {
-  res.status(404).json({
-    message: "Route not found",
-    path: req.path,
-    method: req.method,
-  });
-});
-
-// Error handling middleware - must be LAST
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error("Error:", err.message);
-
-  // CORS error
-  if (err.message === "Not allowed by CORS") {
-    return res.status(403).json({
-      message: "CORS error: Origin not allowed",
-      origin: req.get("origin"),
-    });
-  }
-
-  res.status(err.status || 500).json({
-    message: err.message || "Something went wrong!",
-    error: process.env.NODE_ENV === "development" ? err.stack : undefined,
-  });
+  console.error(err.stack);
+  res
+    .status(500)
+    .json({ message: "Something went wrong!", error: err.message });
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = { io };

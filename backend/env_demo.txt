@@ -1,6 +1,5 @@
 PORT=YOUR_PORT||5000
-MONGO_URI=mongodb://localhost:27017/coll-lmsDB||Your_AtLAS_DETAILS
+MONGO_URI=mongodb://localhost:27017/coll-lmsDB
 JWT_SECRET=your_jwt_secret
 JWT_EXPIRE=7d
-NODE_ENV=production
-CLIENT_URL=http://localhost:3000||your_Vercel_Frontend_URL
+CLIENT_URL=http://localhost:3000
